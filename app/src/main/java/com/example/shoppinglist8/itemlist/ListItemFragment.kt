@@ -17,12 +17,14 @@ import kotlinx.android.synthetic.main.fragment_list_item.*
 class ListItemFragment : Fragment() {
     lateinit var viewModel: ItemViewModel
     lateinit var binding: FragmentListItemBinding
+    lateinit var rvAdapter: RecylerAdapter
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(requireActivity()).get(ItemViewModel::class.java)
-
+        binding = FragmentListItemBinding.inflate(layoutInflater)
+        initViewModel()
+        subscribe()
     }
 
     override fun onCreateView(
@@ -36,17 +38,32 @@ class ListItemFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        recycler_view.apply {
-            layoutManager = LinearLayoutManager(activity)
-            //set
-            val items = viewModel.getItem()
-            println(items.size)
-            for (a in items){
-                println("LOOOPING -> ${a.itemName}")
+        binding.apply {
+            rvAdapter = RecylerAdapter(viewModel)
+            recycler_view.apply {
+                layoutManager = LinearLayoutManager(activity)
+                adapter = rvAdapter
             }
-            adapter = RecylerAdapter(items)
         }
 
+    }
+
+    private fun subscribe() {
+        viewModel.itemLiveData.observe(this) {
+            rvAdapter.setData(it)
+        }
+
+    }
+
+    fun initViewModel() {
+        viewModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+                val repo = ItemRepositoryImplement()
+                return ItemViewModel(repo) as T
+            }
+        }
+
+        ).get(ItemViewModel::class.java)
     }
 
     companion object {

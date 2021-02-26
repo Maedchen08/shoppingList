@@ -10,10 +10,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.shoppinglist8.R
 import com.example.shoppinglist8.components.LoadingDialog
 import com.example.shoppinglist8.databinding.FragmentAddItemBinding
+import com.example.shoppinglist8.itemlist.ItemRepositoryImplement
 import com.example.shoppinglist8.utils.Item
 import com.example.shoppinglist8.utils.ResourceStatus
 import com.example.shoppinglist8.viewmodel.AddItemViewModel
@@ -21,10 +23,10 @@ import com.example.shoppinglist8.viewmodel.ItemViewModel
 import java.util.*
 
 class AddItemFragment : Fragment() {
-    lateinit var viewModel:AddItemViewModel
+    lateinit var viewModel: AddItemViewModel
     lateinit var sharedViewModel: ItemViewModel
     lateinit var binding: FragmentAddItemBinding
-    lateinit var loadingDialog:AlertDialog
+    lateinit var loadingDialog: AlertDialog
     var item: Item? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,8 +82,13 @@ class AddItemFragment : Fragment() {
     }
 
     private fun initViewModel() {
-        sharedViewModel = ViewModelProvider(requireActivity()).get(ItemViewModel::class.java)
-        viewModel = ViewModelProvider(this).get(AddItemViewModel::class.java)
+        sharedViewModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+                val repo = ItemRepositoryImplement()
+           return ItemViewModel(repo) as T
+            }
+        }).get(ItemViewModel::class.java)
+            viewModel = ViewModelProvider(this).get(AddItemViewModel::class.java)
     }
 
     private fun subscribe() = viewModel.isValid.observe(this) {
@@ -90,7 +97,7 @@ class AddItemFragment : Fragment() {
                 loadingDialog.show()
             }
             ResourceStatus.SUCCESS -> {
-                sharedViewModel.addItem(item!!)
+                sharedViewModel.onAddItem(item!!)
                 clearInput()
                 loadingDialog.hide()
                 Toast.makeText(
